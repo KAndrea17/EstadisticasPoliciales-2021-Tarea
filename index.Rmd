@@ -1,0 +1,157 @@
+---
+title: "Estadisticas Policiales 2021"
+author: "Andrea Padilla Elizondo C19260"
+date: "2022-06-15"
+output:
+  html_document:
+    code_folding: hide
+    theme: readable
+    toc: true
+    toc_depth: 5
+    toc_float:
+      collapsed: false
+      smooth_scroll: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## **Carga de Paquetes**
+
+```{r , message=FALSE}
+### Carga de paquetes de R
+library(dplyr)
+library(ggplot2) 
+library(plotly) 
+library(DT) 
+library(rgdal) 
+library(readxl)
+library(readr)
+library(lubridate)
+```
+
+## **Tabla interactiva con el paquete DT**
+#### Preparativos
+
+```{r, carga de datos}
+# Carga de datos de Datos
+estadisticas_policiales <-
+  readxl::read_excel("C:/Users/User/Downloads/estadisticaspoliciales2021.xls")
+```
+
+```{r, trasformacion}
+# Transformacion de la Fecha
+estadisticas_policiales$Fecha <- as.Date(estadisticas_policiales$Fecha, format = "%d/%m/%Y")
+```
+
+
+#### Tabla de estadisticas policiales del 2021 en Costa Rica
+```{r, estadisticas}
+estadisticas_policiales %>%
+  dplyr::select(Delito,
+                Fecha,
+                Victima,
+                Edad,
+                Genero,
+                Provincia,
+                Canton) %>%
+  datatable(
+    colnames = c(
+      "Delito",
+      "Fecha",
+      "Víctima",
+      "Edad",
+      "Género",
+      "Provincia",
+      "Cantón"
+    ),
+    options = list(
+      pageLength = 5,
+      language = list(url = '//cdn.datatables.net/plug-ins/1.10.11/i18n/Spanish.json')
+    )
+  )
+```
+
+## **Gráficos Estadisticos** 
+
+#### Gráfico de Cantidad de Delitos por Tipo 
+
+```{r, gráfico de Cantidad por tipo}
+grafico_estadisticas_portipo <-
+estadisticas_policiales %>%
+count(Delito) %>%
+ggplot(aes(x = reorder(Delito, n), y = n)) +
+geom_bar(stat = "identity") +
+ggtitle("Cantidad de Delitos por Tipo") +
+xlab("Tipo") +
+ylab("Cantidad de Delito") +
+coord_flip() + 
+theme_minimal()
+
+ggplotly(grafico_estadisticas_portipo)
+```
+
+#### Gráfico de Cantidad de Delitos por mes 
+
+##### Preparativos 
+```{r, Delitos por mes}
+estadistica_pormes <- estadisticas_policiales %>% mutate(fecha_mes = lubridate::month(Fecha)) 
+nombres_estadisca <- c("Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre")
+``` 
+
+
+```{r, grafico por mes}
+grafico_delito_mes <-
+estadistica_pormes %>%
+count(fecha_mes) %>%
+ggplot(level = levelorder, (aes(x = reorder(nombres_estadisca, fecha_mes), y = n))) +
+geom_bar(stat = "identity") +
+ggtitle("Cantidad de Delitos por mes") +
+xlab("Mes del año") +
+ylab("Cantidad de Delito") +
+theme_minimal( )
+
+ggplotly (grafico_delito_mes)
+
+```
+
+#### Gráfico de Proporciones del Delito según el Género
+
+```{r, gráfico de genero}
+grafico_por_genero <-
+  estadisticas_policiales %>%
+  ggplot(aes(x = Delito, fill = Genero)) +
+  geom_bar(position = "fill") +
+  ggtitle("proporción de Delitos según el Género") +
+  xlab("Género") +
+  ylab("Proporciones") +
+  labs(fill = "Delito") +
+  theme_minimal()
+
+ggplotly(grafico_por_genero) 
+```
+
+
+#### Gráfico de Cantidad de Delitos para San José, Alajuela, Cartago y Heredia 
+
+```{r grafico-delito-cantones}
+grafico_delito_cantones <-
+  estadisticas_policiales %>%
+  count(Canton) %>%
+  filter(Canton == "SAN JOSE" |
+           Canton == "ALAJUELA" |
+           Canton == "CARTAGO" | Canton == "HEREDIA") %>%
+  ggplot(aes(x = reorder(Canton, n), y = n)) +
+  geom_bar(stat = "identity") +
+  ggtitle("Cantidad de Delitos en San José, Alajuela, Cartago y Heredia") +
+  xlab("Cantón") +
+  ylab("Cantidad") +
+  theme_minimal()
+
+ggplotly(grafico_delito_cantones)
+```
+
+## **Bibliografía**
+
+Datos abiertos del Organismo de Investigación Judicial (OIJ). (30, noviembre, 2020). Estadisticaspoliciales2021 [Base de datos]. Recuperado de https://sitiooij.poder-judicial.go.cr/index.php/ayuda/servicios-policiales/servicios-a-organizaciones/indice-de-transparencia-del-sector-publico-costarricense/datos-abiertos
